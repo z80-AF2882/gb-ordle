@@ -1,10 +1,14 @@
 INCLUDE "hardware.inc"
 INCLUDE "main.inc"
+INCLUDE "tiles.inc"
 
 DEF BoardStart      EQU $9803
-DEF EmptySpaceTile  EQU 44      ; index of blank field (no letter selected)
+
+DEF EmptySpaceTile  EQU T_BORDER_TL
 
 DEF DrawBoardDelay  EQU 20      ; number of frames to wait before drawing next board row
+
+DEF LettersPerRow   EQU 5
 
 SECTION "Start", ROM0
 StartStage::
@@ -43,24 +47,22 @@ DrawBoardInit:
 DrawBoard:
     pop hl
     ld de, 17
-    ld a, EmptySpaceTile
-    ld c,5
+    ld c, LettersPerRow
 .drawTopRow
+    ld a, T_BORDER_TL
+    ld [hli], a    
+    ld a, T_BORDER_TR
     ld [hli], a
-    inc a
-    ld [hli], a
-    dec a
     inc hl
     dec c
     jr nz, .drawTopRow
     add hl, de    
-    ld a, EmptySpaceTile + 2
-    ld c,5
+    ld c, LettersPerRow
 .drawBotRow
+    ld a, T_BORDER_BL
     ld [hli], a
-    inc a
+    ld a, T_BORDER_BR
     ld [hli], a
-    dec a
     inc hl
     dec c
     jr nz, .drawBotRow
@@ -79,7 +81,12 @@ DrawBoard:
     jp Sleep
 
 StartDelayDrawBoard:
+    ldh a, [Joypad]
+    and JOYF_START
     ld a, DrawBoardDelay
+    jr z, .setDelay
+    rra
+.setDelay    
     ldh [AnimationCounter], a
     ON_UPDATE(DelayDrawBoard)
     ; continue
@@ -91,6 +98,6 @@ DelayDrawBoard:
     ON_UPDATE(DrawBoard)
     jp Sleep
 
-SECTION "Start Variables", HRAM
+SECTION UNION "Local HRAM Variables", HRAM
 AnimationCounter:
     DS 1

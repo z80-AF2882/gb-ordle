@@ -42,20 +42,49 @@ if (-not (Test-Path $OUT_DIR)) {
 }
 
 # Clean out directory if files exist
-Write-Host "Cleaning out directory $OUT_DIR"
-Get-ChildItem -Path "$OUT_DIR\*" -Force | Remove-Item -Force -ErrorAction Stop
+if ($Clean) {
+    Write-Host "Cleaning out directory $OUT_DIR"
+    Get-ChildItem -Path "$OUT_DIR\*" -Force | Remove-Item -Force -ErrorAction Stop
+}
 
 # Compile all from src
+$CompilationSuccessCount = 0
+$CompilationErrorCount = 0
 Write-Host "Compiling from $SRC_DIR to $OUT_DIR ..."
 Get-ChildItem -Path "$SRC_DIR\*.asm" | ForEach-Object {
+
+    $ASM_FILE = "$SRC_DIR\$($_.Name)"
+    $OBJ_FILE = "$OUT_DIR\$($_.BaseName).o"
+
+    if (Test-Path $OBJ_FILE) {
+        $AsmFileModified = (Get-Item $ASM_FILE).LastWriteTime
+        $ObjFileModified = (Get-Item $OBJ_FILE).LastWriteTime
+        if ($AsmFileModified -lt $ObjFileModified) {
+            Write-Debug " ... $($_.Name) is up to date"
+            return
+        }
+    }
+
     Write-Output " ... $($_.Name)"
     # RGBASM
-    & $RGBASM -Wall -Weverything -i "$INC_DIR\" -i "$GFX_DIR\" -o "$OUT_DIR\$($_.BaseName).o" "$SRC_DIR\$($_.Name)"
+    & $RGBASM -Wall -Weverything -i "$INC_DIR\" -i "$GFX_DIR\" -o $OBJ_FILE $ASM_FILE
     
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Compilation failed for $($_.Name)" -ErrorAction Stop
-        Exit -1
+        $CompilationErrorCount++
+        Write-Output "ERROR $($_.Name)"
+    } else {
+        $CompilationSuccessCount++
     }
+}
+
+if ($CompilationErrorCount -gt 0) {
+    Write-Error "Compilation failed with $CompilationErrorCount error(s)" -ErrorAction Stop
+    Exit -1
+}
+
+if ($CompilationSuccessCount -eq 0) {
+    Write-Host "Nothing to compile. STOP"
+    Exit 0
 }
 
 # Link

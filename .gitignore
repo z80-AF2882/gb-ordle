@@ -1,3 +1,5 @@
 bin/bgb/**/*
 bin/rgbds/**/*
 out/**/*
+tmp/*
+

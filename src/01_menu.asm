@@ -1,6 +1,7 @@
 INCLUDE "hardware.inc"
 INCLUDE "debug.inc"
 INCLUDE "main.inc"
+INCLUDE "tiles.inc"
 INCLUDE "charmap.inc"
 
 PressStartTextAddress EQU $9a44
@@ -15,7 +16,7 @@ MenuStage::
     ; ;;;;;;;;;;;;
 
     ld hl, ShadowOam
-    ld b, Start0_0
+    ld b, T_START_UP
     ld c, 3
     ld d, 161
     ld e, 77
@@ -68,31 +69,8 @@ ScrollUp:
 .end
     
 
-WaitForButtonPress:
-    ; ;;;;;;;;;;;;;;;;;;;;;
-    ; ld a, [Index]
-    ; ld l, a
-    ; ld a, [Index + 1]
-    ; ld h, a
-    ; ld a, [Sim]
-    ; ld [hli], a
-    ; ld a, [CurrentFrame]
-    ; ld [hli], a
-    ; ld a, l
-    ; ld [Index], a
-    ; ld a, h
-    ; ld [Index + 1], a
-    ; xor a 
-    ; ld [hli], a
-    ; ld [hli], a
-    ; ld [hli], a
-    ; ld [hli], a
-    ; ld [hli], a
-    ; ld [hli], a
-    ; ld [hli], a
-    ; ld [hli], a
-    ; ;;;;;;;;;;;;;;;;;;;;;   
-    ldh a, [Joypad]     
+WaitForButtonPress:    
+    rst 8
     and JOYF_START
     jr z, .switchTile
     ON_UPDATE(StartStage)
@@ -100,7 +78,7 @@ WaitForButtonPress:
 .switchTile
     ld a, [CurrentFrame]
     bit 5, a
-    ld a, Start0_0
+    ld a, T_START_UP
     jr nz, .otherTile
     add a, 3    
 .otherTile
@@ -122,15 +100,11 @@ WaitForButtonPress:
     
 SECTION "Menu Constands", ROM0
 PressStart:
-    DB "press    ..."    
+    DB "press     ..."    
 .end    
 
-SECTION "Menu HRAM Variables", HRAM
+SECTION UNION "Local HRAM Variables", HRAM
 Step:
     DS 1
 ; Index:
 ;     DS 2
-
-; SECTION "DBG", WRAMX
-; Console:
-;     DS $1000
